@@ -1,4 +1,6 @@
+import { checkForReservedKeyword } from '../../helpers';
 import { isReservedJavaScriptKeyword } from '../javascript/Constants';
+import { TypeScriptOptions } from './TypeScriptGenerator';
 export const RESERVED_TYPESCRIPT_KEYWORDS = [
   'break',
   'case',
@@ -65,9 +67,21 @@ export const RESERVED_TYPESCRIPT_KEYWORDS = [
 ];
 
 /**
- * Not only do we need to check reserved TS keywords, but we have a transitive dependency 
+ * Not only do we need to check reserved TS keywords, but we have a transitive dependency
  * on JS keywords as well because of potential transpilation process.
  */
-export function isReservedTypeScriptKeyword(word: string): boolean {
-  return RESERVED_TYPESCRIPT_KEYWORDS.includes(word) && isReservedJavaScriptKeyword(word);
+export function isReservedTypeScriptKeyword(
+  word: string,
+  forceLowerCase = true,
+  options: TypeScriptOptions | undefined
+): boolean {
+  const isTsReserved = checkForReservedKeyword(
+    word,
+    RESERVED_TYPESCRIPT_KEYWORDS,
+    forceLowerCase
+  );
+  const isJsReserved = options?.useJavascriptReservedKeywords
+    ? isReservedJavaScriptKeyword(word)
+    : false;
+  return isTsReserved || isJsReserved;
 }

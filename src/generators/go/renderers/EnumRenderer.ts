@@ -1,37 +1,85 @@
 import { GoRenderer } from '../GoRenderer';
-import { EnumPreset, CommonModel } from '../../../models';
+import {
+  ConstrainedEnumModel,
+  ConstrainedEnumValueModel
+} from '../../../models';
+import { EnumPresetType } from '../GoPreset';
+import { GoOptions } from '../GoGenerator';
 
 /**
  * Renderer for Go's `enum` type
- * 
+ *
+ * This renderer is a generic solution that works for all types of enum values.
+ * This is also why you wont see `type MyEnum string´ even if possible.
+ *
  * @extends GoRenderer
  */
-export class EnumRenderer extends GoRenderer {
-  public defaultSelf(): string {
-    const formattedName = this.nameType(this.model.$id);
-    const type = this.enumType(this.model);
-    const doc = formattedName && this.renderCommentForEnumType(formattedName, type);
+export class EnumRenderer extends GoRenderer<ConstrainedEnumModel> {
+  public async defaultSelf(): Promise<string> {
+    const enumValues = await this.renderItems();
+    const valuesToEnumMap = this.model.values.map((value) => {
+      return `${this.model.name}Values[${value.key}]: ${value.key},`;
+    });
+    const additionalContent = await this.runAdditionalContentPreset();
 
-    return `${doc}
-type ${formattedName} ${type}`;
+    const values = this.model.values
+      .map((value) => {
+        return value.value;
+      })
+      .join(',');
+
+    return `type ${this.model.name} uint
+
+const (
+${this.indent(enumValues)}
+)
+
+// Value returns the value of the enum.
+func (op ${this.model.name}) Value() any {
+	if op >= ${this.model.name}(len(${this.model.name}Values)) {
+		return nil
+	}
+	return ${this.model.name}Values[op]
+}
+
+var ${this.model.name}Values = []any{${values}}
+var ValuesTo${this.model.name} = map[any]${this.model.name}{
+${this.indent(this.renderBlock(valuesToEnumMap))}
+}
+${additionalContent}`;
   }
 
-  enumType(model: CommonModel): string {
-    if (this.model.type === undefined || Array.isArray(this.model.type)) {
-      return 'interface{}';
+  async renderItems(): Promise<string> {
+    const enums = this.model.values || [];
+    const items: string[] = [];
+
+    for (const [index, item] of enums.entries()) {
+      const renderedItem = await this.runItemPreset(item, index);
+      items.push(renderedItem);
     }
 
-    return this.toGoType(this.model.type, model);
+    return this.renderBlock(items);
   }
 
-  renderCommentForEnumType(name: string, type: string): string {
-    const globalType = type === 'interface{}' ? 'mixed types' : type;
-    return this.renderComments(`${name} represents an enum of ${globalType}.`);
+  runItemPreset(
+    item: ConstrainedEnumValueModel,
+    index: number
+  ): Promise<string> {
+    return this.runPreset('item', { item, index });
   }
 }
 
-export const GO_DEFAULT_ENUM_PRESET: EnumPreset<EnumRenderer> = {
+export const GO_DEFAULT_ENUM_PRESET: EnumPresetType<GoOptions> = {
   self({ renderer }) {
     return renderer.defaultSelf();
   },
+  item({ model, item, index }) {
+    if (index === 0) {
+      return `${item.key} ${model.name} = iota`;
+    }
+    if (typeof item.value === 'string') {
+      return item.key;
+    }
+    return item.key;
+  }
 };

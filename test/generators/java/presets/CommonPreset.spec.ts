@@ -1,122 +1,202 @@
-import { JavaGenerator, JAVA_COMMON_PRESET } from '../../../../src/generators'; 
+import {
+  JavaGenerator,
+  JAVA_COMMON_PRESET,
+  JavaCommonPresetOptions
+} from '../../../../src/generators';
 
 describe('JAVA_COMMON_PRESET', () => {
+  const doc = {
+    $id: 'Clazz',
+    type: 'object',
+    required: ['requiredProp'],
+    properties: {
+      requiredProp: { type: 'boolean' },
+      stringProp: { type: 'string' },
+      numberProp: { type: 'number' },
+      booleanProp: { type: 'boolean' },
+      arrayProp: { type: 'array', items: { type: 'string' } }
+    }
+  };
   test('should render common function in class by common preset', async () => {
-    const doc = {
-      $id: 'Clazz',
-      type: 'object',
-      properties: {
-        stringProp: { type: 'string' },
-        numberProp: { type: 'number' },
-      },
-    };
-    const expected = `public class Clazz {
-  private String stringProp;
-  private Double numberProp;
-  private Map<String, Object> additionalProperties;
-
-  public String getStringProp() { return this.stringProp; }
-  public void setStringProp(String stringProp) { this.stringProp = stringProp; }
-
-  public Double getNumberProp() { return this.numberProp; }
-  public void setNumberProp(Double numberProp) { this.numberProp = numberProp; }
-
-  public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
-  public void setAdditionalProperties(Map<String, Object> additionalProperties) { this.additionalProperties = additionalProperties; }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    Clazz self = (Clazz) o;
-      return 
-        Objects.equals(this.stringProp, self.stringProp) &&
-        Objects.equals(this.numberProp, self.numberProp) &&
-        Objects.equals(this.additionalProperties, self.additionalProperties);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(stringProp, numberProp, additionalProperties);
-  }
-
-  @Override
-  public String toString() {
-    return "class Clazz {\\n" +   
-      "    stringProp: " + toIndentedString(stringProp) + "\\n" +
-      "    numberProp: " + toIndentedString(numberProp) + "\\n" +
-      "    additionalProperties: " + toIndentedString(additionalProperties) + "\\n" +
-    "}";
-  }
-
-  /**
-   * Convert the given object to string with each line indented by 4 spaces
-   * (except the first line).
-   */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\\n", "\\n    ");
-  }
-}`;
-
     const generator = new JavaGenerator({ presets: [JAVA_COMMON_PRESET] });
-    const inputModel = await generator.process(doc);
-    const model = inputModel.models['Clazz'];
-
-    const classModel = await generator.renderClass(model, inputModel);
-    const expectedDependencies = ['import java.util.Map;'];
-    expect(classModel.result).toEqual(expected);
-    expect(classModel.dependencies).toEqual(expectedDependencies);
+    const models = await generator.generate(doc);
+    expect(models).toHaveLength(1);
+    expect(models[0].result).toMatchSnapshot();
+  });
+  test('should render accurately when there is no additional properties', async () => {
+    const generator = new JavaGenerator({ presets: [JAVA_COMMON_PRESET] });
+    const models = await generator.generate({
+      ...doc,
+      additionalProperties: false
+    });
+    expect(models).toHaveLength(1);
+    expect(models[0].result).toMatchSnapshot();
   });
 
-  test('should skip rendering of disabled functions', async () => {
-    const doc = {
-      $id: 'Clazz',
-      type: 'object',
-      properties: {
-        stringProp: { type: 'string' },
-        numberProp: { type: 'number' },
-      },
-    };
-    const expected = `public class Clazz {
-  private String stringProp;
-  private Double numberProp;
-  private Map<String, Object> additionalProperties;
-
-  public String getStringProp() { return this.stringProp; }
-  public void setStringProp(String stringProp) { this.stringProp = stringProp; }
-
-  public Double getNumberProp() { return this.numberProp; }
-  public void setNumberProp(Double numberProp) { this.numberProp = numberProp; }
-
-  public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
-  public void setAdditionalProperties(Map<String, Object> additionalProperties) { this.additionalProperties = additionalProperties; }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(stringProp, numberProp, additionalProperties);
-  }
-}`;
-
-    const generator = new JavaGenerator({ presets: [{
-      preset: JAVA_COMMON_PRESET,
-      options: {
+  describe('with option', () => {
+    test('should render all functions', async () => {
+      const generator = new JavaGenerator({
+        presets: [
+          {
+            preset: JAVA_COMMON_PRESET,
+            options: {
+              equal: true,
+              hashCode: true,
+              classToString: true,
+              marshalling: false
+            }
+          }
+        ]
+      });
+      const models = await generator.generate(doc);
+      expect(models).toHaveLength(1);
+      expect(models[0].result).toMatchSnapshot();
+      expect(models[0].dependencies).toEqual([
+        'import java.util.Map;',
+        'import java.util.Objects;'
+      ]);
+    });
+    test('should not render any functions when all 4 options are disabled', async () => {
+      const options: JavaCommonPresetOptions = {
         equal: false,
+        hashCode: false,
         classToString: false,
-      }
-    }] });
-    const inputModel = await generator.process(doc);
-    const model = inputModel.models['Clazz'];
+        marshalling: false
+      };
 
-    const classModel = await generator.renderClass(model, inputModel);
-    const expectedDependencies = ['import java.util.Map;'];
-    expect(classModel.result).toEqual(expected);
-    expect(classModel.dependencies).toEqual(expectedDependencies);
+      const generator = new JavaGenerator({
+        presets: [
+          {
+            preset: JAVA_COMMON_PRESET,
+            options
+          }
+        ]
+      });
+      const models = await generator.generate(doc);
+      expect(models).toHaveLength(1);
+      expect(models[0].result).toMatchSnapshot();
+    });
+    test('should render equals', async () => {
+      const generator = new JavaGenerator({
+        presets: [
+          {
+            preset: JAVA_COMMON_PRESET,
+            options: {
+              equal: true,
+              hashCode: false,
+              classToString: false,
+              marshalling: false
+            }
+          }
+        ]
+      });
+      const models = await generator.generate(doc);
+      expect(models).toHaveLength(1);
+      expect(models[0].result).toMatchSnapshot();
+      expect(models[0].dependencies).toEqual([
+        'import java.util.Map;',
+        'import java.util.Objects;'
+      ]);
+    });
+    test('should render hashCode', async () => {
+      const generator = new JavaGenerator({
+        presets: [
+          {
+            preset: JAVA_COMMON_PRESET,
+            options: {
+              equal: false,
+              hashCode: true,
+              classToString: false,
+              marshalling: false
+            }
+          }
+        ]
+      });
+      const models = await generator.generate(doc);
+      expect(models).toHaveLength(1);
+      expect(models[0].result).toMatchSnapshot();
+      expect(models[0].dependencies).toEqual([
+        'import java.util.Map;',
+        'import java.util.Objects;'
+      ]);
+    });
+    test('should render classToString', async () => {
+      const generator = new JavaGenerator({
+        presets: [
+          {
+            preset: JAVA_COMMON_PRESET,
+            options: {
+              equal: false,
+              hashCode: false,
+              classToString: true,
+              marshalling: false
+            }
+          }
+        ]
+      });
+      const models = await generator.generate(doc);
+      expect(models).toHaveLength(1);
+      expect(models[0].result).toMatchSnapshot();
+      expect(models[0].dependencies).toEqual(['import java.util.Map;']);
+    });
+    test('should render un/marshal', async () => {
+      const generator = new JavaGenerator({
+        presets: [
+          {
+            preset: JAVA_COMMON_PRESET,
+            options: {
+              equal: false,
+              hashCode: false,
+              classToString: false,
+              marshalling: true
+            }
+          }
+        ]
+      });
+      const models = await generator.generate(doc);
+      expect(models).toHaveLength(1);
+      expect(models[0].result).toMatchSnapshot();
+      expect(models[0].dependencies).toEqual([
+        'import java.util.Map;',
+        'import java.util.stream;',
+        'import org.json.JSONObject;'
+      ]);
+    });
+    test('should not render anything when isExtended is true', async () => {
+      const extend = {
+        $id: 'extend',
+        type: 'object',
+        properties: {
+          extendProp: {
+            type: 'string'
+          }
+        }
+      };
+      const extendDoc = {
+        $id: 'extendDoc',
+        allOf: [extend]
+      };
+      const generator = new JavaGenerator({
+        presets: [
+          {
+            preset: JAVA_COMMON_PRESET,
+            options: {
+              equal: true,
+              hashCode: true,
+              classToString: true,
+              marshalling: true
+            }
+          }
+        ],
+        processorOptions: {
+          interpreter: {
+            allowInheritance: true
+          }
+        }
+      });
+      const models = await generator.generate(extendDoc);
+      expect(models).toHaveLength(2);
+      expect(models.map((model) => model.result)).toMatchSnapshot();
+    });
   });
 });

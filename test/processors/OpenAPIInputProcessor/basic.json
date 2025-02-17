@@ -5,6 +5,17 @@
   },
   "paths": {
     "/test": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "credentials that authenticate a user agent with a server",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
       "post": {
         "parameters": [
           {
@@ -22,7 +33,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/ApiResponse"
+                "$ref": "#/components/schemas/ApiResponse"
               }
             }
           },
@@ -33,7 +44,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/ApiResponse"
+                  "$ref": "#/components/schemas/ApiResponse"
                 }
               }
             }
@@ -47,7 +58,7 @@
                   "content": {
                     "application/json": {
                       "schema": {
-                        "$ref": "#/components/ApiResponse"
+                        "$ref": "#/components/schemas/ApiResponse"
                       }
                     }
                   }
@@ -57,7 +68,7 @@
                     "content": {
                       "application/json": {
                         "schema": {
-                          "$ref": "#/components/ApiResponse"
+                          "$ref": "#/components/schemas/ApiResponse"
                         }
                       }
                     }
@@ -73,7 +84,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/ApiResponse"
+                "$ref": "#/components/schemas/ApiResponse"
               }
             }
           },
@@ -85,7 +96,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/ApiResponse"
+                  "$ref": "#/components/schemas/ApiResponse"
                 }
               }
             }
@@ -97,7 +108,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/ApiResponse"
+                "$ref": "#/components/schemas/ApiResponse"
               }
             }
           },
@@ -109,7 +120,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/ApiResponse"
+                  "$ref": "#/components/schemas/ApiResponse"
                 }
               }
             }
@@ -121,7 +132,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/ApiResponse"
+                "$ref": "#/components/schemas/ApiResponse"
               }
             }
           },
@@ -133,7 +144,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/ApiResponse"
+                  "$ref": "#/components/schemas/ApiResponse"
                 }
               }
             }
@@ -145,7 +156,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/ApiResponse"
+                "$ref": "#/components/schemas/ApiResponse"
               }
             }
           },
@@ -157,7 +168,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/ApiResponse"
+                  "$ref": "#/components/schemas/ApiResponse"
                 }
               }
             }
@@ -171,7 +182,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/ApiResponse"
+                  "$ref": "#/components/schemas/ApiResponse"
                 }
               }
             }
@@ -183,7 +194,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/ApiResponse"
+                "$ref": "#/components/schemas/ApiResponse"
               }
             }
           },
@@ -195,7 +206,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/ApiResponse"
+                  "$ref": "#/components/schemas/ApiResponse"
                 }
               }
             }
@@ -207,7 +218,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/ApiResponse"
+                "$ref": "#/components/schemas/ApiResponse"
               }
             }
           },
@@ -219,7 +230,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/ApiResponse"
+                  "$ref": "#/components/schemas/ApiResponse"
                 }
               }
             }
@@ -229,18 +240,20 @@
     }
   },
   "components": {
-    "ApiResponse": {
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "type": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
+    "schemas": {
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "type": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
         }
       }
     }

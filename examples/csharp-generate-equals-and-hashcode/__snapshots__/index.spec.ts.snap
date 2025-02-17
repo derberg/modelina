@@ -2,13 +2,14 @@
 
 exports[`Should be able to generate a model to overwrite the Equal and GetHashCode methods and should log expected output to console 1`] = `
 Array [
-  "public class Root {
-  private string email;
+  "public partial class Root
+{
+  private string? email;
 
-  public string Email 
+  public string? Email 
   {
     get { return email; }
-    set { email = value; }
+    set { this.email = value; }
   }
 
   public override bool Equals(object obj)
@@ -16,8 +17,9 @@ Array [
     if(obj is Root model)
     {
       if(ReferenceEquals(this, model)) { return true; }
-      return Email == model.Email;
+      return Object.Equals(Email, model.Email);
     }
+
     return false;
   }
 
@@ -27,7 +29,6 @@ Array [
     hash.Add(Email);
     return hash.ToHashCode();
   }
-
 }",
 ]
 `;

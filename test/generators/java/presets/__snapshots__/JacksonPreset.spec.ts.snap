@@ -1,0 +1,278 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`JAVA_JACKSON_PRESET should not render anything when isExtended is true 1`] = `
+Array [
+  "public class ExtendDoc implements Extend {
+  @JsonProperty(\\"extendProp\\")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String extendProp;
+  @JsonAnySetter
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Map<String, Object> additionalProperties;
+
+  @Override
+  public String getExtendProp() { return this.extendProp; }
+  @Override
+  public void setExtendProp(String extendProp) { this.extendProp = extendProp; }
+
+  @JsonAnyGetter
+  public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
+  public void setAdditionalProperties(Map<String, Object> additionalProperties) { this.additionalProperties = additionalProperties; }
+}",
+  "public interface Extend {
+  public String getExtendProp();
+  public void setExtendProp(String extendProp);
+}",
+]
+`;
+
+exports[`JAVA_JACKSON_PRESET should render Jackson annotations for class 1`] = `
+"public class Clazz {
+  @JsonProperty(\\"min_number_prop\\")
+  private double minNumberProp;
+  @JsonProperty(\\"max_number_prop\\")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Double maxNumberProp;
+  @JsonAnySetter
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Map<String, Object> additionalProperties;
+
+  public double getMinNumberProp() { return this.minNumberProp; }
+  public void setMinNumberProp(double minNumberProp) { this.minNumberProp = minNumberProp; }
+
+  public Double getMaxNumberProp() { return this.maxNumberProp; }
+  public void setMaxNumberProp(Double maxNumberProp) { this.maxNumberProp = maxNumberProp; }
+
+  @JsonAnyGetter
+  public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
+  public void setAdditionalProperties(Map<String, Object> additionalProperties) { this.additionalProperties = additionalProperties; }
+}"
+`;
+
+exports[`JAVA_JACKSON_PRESET should render Jackson annotations for enum 1`] = `
+"public enum ReservedEnum {
+  ON((String)\\"on\\"), OFF((String)\\"off\\");
+
+  private String value;
+
+  ReservedEnum(String value) {
+    this.value = value;
+  }
+
+  @JsonValue
+  public String getValue() {
+    return value;
+  }
+
+  @JsonCreator
+  public static ReservedEnum fromValue(String value) {
+    for (ReservedEnum e : ReservedEnum.values()) {
+      if (e.value.equals(value)) {
+        return e;
+      }
+    }
+    throw new IllegalArgumentException(\\"Unexpected value '\\" + value + \\"'\\");
+  }
+
+  @Override
+  public String toString() {
+    return String.valueOf(value);
+  }
+}"
+`;
+
+exports[`JAVA_JACKSON_PRESET union handle oneOf with AsyncAPI discriminator with Jackson 1`] = `
+Array [
+  "@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.EXISTING_PROPERTY, property=\\"vehicle_type\\", visible=true)
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = Car.class, name = \\"Car\\"),
+  @JsonSubTypes.Type(value = Truck.class, name = \\"Truck\\")
+})
+/**
+ * Vehicle represents a union of types: Car, Truck
+ */
+public interface Vehicle {
+  String getVehicleType();
+}",
+  "public class Car implements Vehicle {
+  @JsonProperty(\\"vehicle_type\\")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String vehicleType;
+  @JsonProperty(\\"name\\")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String name;
+  @JsonAnySetter
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Map<String, Object> additionalProperties;
+
+  public String getVehicleType() { return this.vehicleType; }
+  public void setVehicleType(String vehicleType) { this.vehicleType = vehicleType; }
+
+  public String getName() { return this.name; }
+  public void setName(String name) { this.name = name; }
+
+  @JsonAnyGetter
+  public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
+  public void setAdditionalProperties(Map<String, Object> additionalProperties) { this.additionalProperties = additionalProperties; }
+}",
+  "public class Truck implements Vehicle {
+  @JsonProperty(\\"vehicle_type\\")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String vehicleType;
+  @JsonProperty(\\"name\\")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String name;
+  @JsonAnySetter
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Map<String, Object> additionalProperties;
+
+  public String getVehicleType() { return this.vehicleType; }
+  public void setVehicleType(String vehicleType) { this.vehicleType = vehicleType; }
+
+  public String getName() { return this.name; }
+  public void setName(String name) { this.name = name; }
+
+  @JsonAnyGetter
+  public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
+  public void setAdditionalProperties(Map<String, Object> additionalProperties) { this.additionalProperties = additionalProperties; }
+}",
+]
+`;
+
+exports[`JAVA_JACKSON_PRESET union handle oneOf with OpenAPI v3 discriminator with Jackson 1`] = `
+Array [
+  "@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.EXISTING_PROPERTY, property=\\"vehicleType\\", visible=true)
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = Car.class, name = \\"Car\\"),
+  @JsonSubTypes.Type(value = Truck.class, name = \\"Truck\\")
+})
+/**
+ * Vehicle represents a union of types: Car, Truck
+ */
+public interface Vehicle {
+  String getVehicleType();
+}",
+  "public class Car implements Vehicle {
+  @JsonProperty(\\"vehicleType\\")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String vehicleType;
+  @JsonAnySetter
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Map<String, Object> additionalProperties;
+
+  public String getVehicleType() { return this.vehicleType; }
+  public void setVehicleType(String vehicleType) { this.vehicleType = vehicleType; }
+
+  @JsonAnyGetter
+  public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
+  public void setAdditionalProperties(Map<String, Object> additionalProperties) { this.additionalProperties = additionalProperties; }
+}",
+  "public class Truck implements Vehicle {
+  @JsonProperty(\\"vehicleType\\")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String vehicleType;
+  @JsonAnySetter
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Map<String, Object> additionalProperties;
+
+  public String getVehicleType() { return this.vehicleType; }
+  public void setVehicleType(String vehicleType) { this.vehicleType = vehicleType; }
+
+  @JsonAnyGetter
+  public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
+  public void setAdditionalProperties(Map<String, Object> additionalProperties) { this.additionalProperties = additionalProperties; }
+}",
+]
+`;
+
+exports[`JAVA_JACKSON_PRESET union handle oneOf with Swagger v2 discriminator with Jackson 1`] = `
+Array [
+  "@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.EXISTING_PROPERTY, property=\\"vehicleType\\", visible=true)
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = Car.class, name = \\"Car\\"),
+  @JsonSubTypes.Type(value = Truck.class, name = \\"Truck\\")
+})
+/**
+ * Vehicle represents a union of types: Car, Truck
+ */
+public interface Vehicle {
+  String getVehicleType();
+}",
+  "public class Car implements Vehicle {
+  @JsonProperty(\\"vehicleType\\")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String vehicleType;
+  @JsonAnySetter
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Map<String, Object> additionalProperties;
+
+  public String getVehicleType() { return this.vehicleType; }
+  public void setVehicleType(String vehicleType) { this.vehicleType = vehicleType; }
+
+  @JsonAnyGetter
+  public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
+  public void setAdditionalProperties(Map<String, Object> additionalProperties) { this.additionalProperties = additionalProperties; }
+}",
+  "public class Truck implements Vehicle {
+  @JsonProperty(\\"vehicleType\\")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String vehicleType;
+  @JsonAnySetter
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Map<String, Object> additionalProperties;
+
+  public String getVehicleType() { return this.vehicleType; }
+  public void setVehicleType(String vehicleType) { this.vehicleType = vehicleType; }
+
+  @JsonAnyGetter
+  public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
+  public void setAdditionalProperties(Map<String, Object> additionalProperties) { this.additionalProperties = additionalProperties; }
+}",
+]
+`;
+
+exports[`JAVA_JACKSON_PRESET union handle oneOf without discriminator with Jackson deduction 1`] = `
+Array [
+  "@JsonTypeInfo(use=JsonTypeInfo.Id.DEDUCTION)
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = Car.class, name = \\"Car\\"),
+  @JsonSubTypes.Type(value = Truck.class, name = \\"Truck\\")
+})
+/**
+ * Vehicle represents a union of types: Car, Truck
+ */
+public interface Vehicle {
+  
+}",
+  "public class Car implements Vehicle {
+  @JsonProperty(\\"passengers\\")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String passengers;
+  @JsonAnySetter
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Map<String, Object> additionalProperties;
+
+  public String getPassengers() { return this.passengers; }
+  public void setPassengers(String passengers) { this.passengers = passengers; }
+
+  @JsonAnyGetter
+  public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
+  public void setAdditionalProperties(Map<String, Object> additionalProperties) { this.additionalProperties = additionalProperties; }
+}",
+  "public class Truck implements Vehicle {
+  @JsonProperty(\\"cargo\\")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String cargo;
+  @JsonAnySetter
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Map<String, Object> additionalProperties;
+
+  public String getCargo() { return this.cargo; }
+  public void setCargo(String cargo) { this.cargo = cargo; }
+
+  @JsonAnyGetter
+  public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
+  public void setAdditionalProperties(Map<String, Object> additionalProperties) { this.additionalProperties = additionalProperties; }
+}",
+]
+`;

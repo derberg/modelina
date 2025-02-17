@@ -1,7 +1,11 @@
-import { CommonInputModel, CommonModel, FileGenerator, OutputModel } from '../../../src';
-import { JavaGenerator } from '../../../src/generators'; 
-import * as path from 'path';
-import * as fs from 'fs';
+import {
+  JAVA_COMMON_PRESET,
+  JAVA_CONSTRAINTS_PRESET,
+  JAVA_DESCRIPTION_PRESET,
+  JAVA_JACKSON_PRESET,
+  JavaGenerator
+} from '../../../src/generators';
+
 describe('JavaGenerator', () => {
   let generator: JavaGenerator;
   beforeEach(() => {
@@ -21,25 +25,10 @@ describe('JavaGenerator', () => {
       },
       additionalProperties: false
     };
-    const expected = `public class Address {
-  private String reservedReservedEnum;
-  private String reservedEnum;
 
-  public String getEnum() { return this.reservedReservedEnum; }
-  public void setEnum(String reservedReservedEnum) { this.reservedReservedEnum = reservedReservedEnum; }
-
-  public String getReservedEnum() { return this.reservedEnum; }
-  public void setReservedEnum(String reservedEnum) { this.reservedEnum = reservedEnum; }
-}`;
-
-    const inputModel = await generator.process(doc);
-    const model = inputModel.models['Address'];
-
-    let classModel = await generator.renderClass(model, inputModel);
-    expect(classModel.result).toEqual(expected);
-
-    classModel = await generator.render(model, inputModel);
-    expect(classModel.result).toEqual(expected);
+    const models = await generator.generate(doc);
+    expect(models).toHaveLength(1);
+    expect(models[0].result).toMatchSnapshot();
   });
   test('should render `class` type', async () => {
     const doc = {
@@ -50,67 +39,30 @@ describe('JavaGenerator', () => {
         city: { type: 'string', description: 'City description' },
         state: { type: 'string' },
         house_number: { type: 'number' },
-        marriage: { type: 'boolean', description: 'Status if marriage live in given house' },
-        members: { oneOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }], },
-        array_type: { type: 'array', items: [{ type: 'string' }, { type: 'number' }] },
+        marriage: {
+          type: 'boolean',
+          description: 'Status if marriage live in given house'
+        },
+        members: {
+          oneOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }]
+        },
+        array_type: {
+          type: 'array',
+          items: [{ type: 'string' }, { type: 'number' }]
+        }
       },
       patternProperties: {
         '^S(.?*)test&': {
           type: 'string'
         }
       },
-      required: ['street_name', 'city', 'state', 'house_number', 'array_type'],
+      required: ['street_name', 'city', 'state', 'house_number', 'array_type']
     };
-    const expected = `public class Address {
-  private String streetName;
-  private String city;
-  private String state;
-  private Double houseNumber;
-  private Boolean marriage;
-  private Object members;
-  private Object[] arrayType;
-  private Map<String, Object> additionalProperties;
-  private Map<String, String> sTestPatternProperties;
-
-  public String getStreetName() { return this.streetName; }
-  public void setStreetName(String streetName) { this.streetName = streetName; }
-
-  public String getCity() { return this.city; }
-  public void setCity(String city) { this.city = city; }
-
-  public String getState() { return this.state; }
-  public void setState(String state) { this.state = state; }
-
-  public Double getHouseNumber() { return this.houseNumber; }
-  public void setHouseNumber(Double houseNumber) { this.houseNumber = houseNumber; }
-
-  public Boolean getMarriage() { return this.marriage; }
-  public void setMarriage(Boolean marriage) { this.marriage = marriage; }
-
-  public Object getMembers() { return this.members; }
-  public void setMembers(Object members) { this.members = members; }
-
-  public Object[] getArrayType() { return this.arrayType; }
-  public void setArrayType(Object[] arrayType) { this.arrayType = arrayType; }
-
-  public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
-  public void setAdditionalProperties(Map<String, Object> additionalProperties) { this.additionalProperties = additionalProperties; }
-
-  public Map<String, String> getSTestPatternProperties() { return this.sTestPatternProperties; }
-  public void setSTestPatternProperties(Map<String, String> sTestPatternProperties) { this.sTestPatternProperties = sTestPatternProperties; }
-}`;
-
-    const inputModel = await generator.process(doc);
-    const model = inputModel.models['Address'];
-
-    let classModel = await generator.renderClass(model, inputModel);
     const expectedDependencies = ['import java.util.Map;'];
-    expect(classModel.result).toEqual(expected);
-    expect(classModel.dependencies).toEqual(expectedDependencies);
-
-    classModel = await generator.render(model, inputModel);
-    expect(classModel.result).toEqual(expected);
-    expect(classModel.dependencies).toEqual(expectedDependencies);
+    const models = await generator.generate(doc);
+    expect(models).toHaveLength(4);
+    expect(models.map((model) => model.result)).toMatchSnapshot();
+    expect(models[3].dependencies).toEqual(expectedDependencies);
   });
 
   test('should work custom preset for `class` type', async () => {
@@ -118,264 +70,121 @@ describe('JavaGenerator', () => {
       $id: 'CustomClass',
       type: 'object',
       properties: {
-        property: { type: 'string' },
+        property: { type: 'string' }
       }
     };
-    const expected = `public class CustomClass {
-  @JsonProperty("property")
-  private String property;
-  @JsonProperty("additionalProperties")
-  private Map<String, Object> additionalProperties;
-
-  @JsonProperty("property")
-  public String getProperty() { return this.property; }
-  @JsonProperty("property")
-  public void setProperty(String property) { this.property = property; }
-
-  @JsonProperty("additionalProperties")
-  public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
-  @JsonProperty("additionalProperties")
-  public void setAdditionalProperties(Map<String, Object> additionalProperties) { this.additionalProperties = additionalProperties; }
-}`;
-
-    generator = new JavaGenerator({ presets: [
-      {
-        class: {
-          property({ renderer, propertyName, content }) {
-            const annotation = renderer.renderAnnotation('JsonProperty', `"${propertyName}"`);
-            return `${annotation}\n${content}`;
-          },
-          getter({ renderer, propertyName, content }) {
-            const annotation = renderer.renderAnnotation('JsonProperty', `"${propertyName}"`);
-            return `${annotation}\n${content}`;
-          },
-          setter({ renderer, propertyName, content }) {
-            const annotation = renderer.renderAnnotation('JsonProperty', `"${propertyName}"`);
-            return `${annotation}\n${content}`;
-          },
+    generator = new JavaGenerator({
+      presets: [
+        {
+          class: {
+            property({ renderer, property, content }) {
+              const annotation = renderer.renderAnnotation(
+                'JsonProperty',
+                `"${property.propertyName}"`
+              );
+              return `${annotation}\n${content}`;
+            },
+            getter({ renderer, property, content }) {
+              const annotation = renderer.renderAnnotation(
+                'JsonProperty',
+                `"${property.propertyName}"`
+              );
+              return `${annotation}\n${content}`;
+            },
+            setter({ renderer, property, content }) {
+              const annotation = renderer.renderAnnotation(
+                'JsonProperty',
+                `"${property.propertyName}"`
+              );
+              return `${annotation}\n${content}`;
+            }
+          }
         }
-      }
-    ] });
-
-    const inputModel = await generator.process(doc);
-    const model = inputModel.models['CustomClass'];
-
-    let classModel = await generator.renderClass(model, inputModel);
+      ]
+    });
     const expectedDependencies = ['import java.util.Map;'];
-    expect(classModel.result).toEqual(expected);
-    expect(classModel.dependencies).toEqual(expectedDependencies);
 
-    classModel = await generator.render(model, inputModel);
-    expect(classModel.result).toEqual(expected);
-    expect(classModel.dependencies).toEqual(expectedDependencies);
+    const models = await generator.generate(doc);
+    expect(models).toHaveLength(1);
+    expect(models[0].result).toMatchSnapshot();
+    expect(models[0].dependencies).toEqual(expectedDependencies);
   });
 
   test('should render `enum` type (string type)', async () => {
     const doc = {
       $id: 'States',
       type: 'string',
-      enum: ['Texas', 'Alabama', 'California', 'New York'],
+      enum: ['Texas', 'Alabama', 'California', 'New York']
     };
-    const expected = `public enum States {
-  TEXAS("Texas"), ALABAMA("Alabama"), CALIFORNIA("California"), NEW_YORK("New York");
 
-  private String value;
-
-  States(String value) {
-    this.value = value;
-  }
-    
-  @JsonValue
-  public String getValue() {
-    return value;
-  }
-
-  @Override
-  public String toString() {
-    return String.valueOf(value);
-  }
-
-  @JsonCreator
-  public static States fromValue(String value) {
-    for (States e : States.values()) {
-      if (e.value.equals(value)) {
-        return e;
-      }
-    }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
-  }
-}`;
-
-    const inputModel = await generator.process(doc);
-    const model = inputModel.models['States'];
-
-    let enumModel = await generator.renderEnum(model, inputModel);
-    const expectedDependencies = ['import com.fasterxml.jackson.annotation.*;'];
-    expect(enumModel.result).toEqual(expected);
-    expect(enumModel.dependencies).toEqual(expectedDependencies);
-
-    enumModel = await generator.render(model, inputModel);
-    expect(enumModel.result).toEqual(expected);
-    expect(enumModel.dependencies).toEqual(expectedDependencies);
+    const models = await generator.generate(doc);
+    expect(models).toHaveLength(1);
+    expect(models[0].result).toMatchSnapshot();
+    expect(models[0].dependencies).toEqual([]);
   });
 
   test('should render `enum` type (integer type)', async () => {
     const doc = {
       $id: 'Numbers',
       type: 'integer',
-      enum: [0, 1, 2, 3],
+      enum: [0, 1, 2, 3]
     };
-    const expected = `public enum Numbers {
-  NUMBER_0(0), NUMBER_1(1), NUMBER_2(2), NUMBER_3(3);
 
-  private Integer value;
-
-  Numbers(Integer value) {
-    this.value = value;
-  }
-    
-  @JsonValue
-  public Integer getValue() {
-    return value;
-  }
-
-  @Override
-  public String toString() {
-    return String.valueOf(value);
-  }
-
-  @JsonCreator
-  public static Numbers fromValue(Integer value) {
-    for (Numbers e : Numbers.values()) {
-      if (e.value.equals(value)) {
-        return e;
-      }
-    }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
-  }
-}`;
-
-    const inputModel = await generator.process(doc);
-    const model = inputModel.models['Numbers'];
-
-    let enumModel = await generator.renderEnum(model, inputModel);
-    const expectedDependencies = ['import com.fasterxml.jackson.annotation.*;'];
-    expect(enumModel.result).toEqual(expected);
-    expect(enumModel.dependencies).toEqual(expectedDependencies);
-
-    enumModel = await generator.render(model, inputModel);
-    expect(enumModel.result).toEqual(expected);
-    expect(enumModel.dependencies).toEqual(expectedDependencies);
+    const models = await generator.generate(doc);
+    expect(models).toHaveLength(1);
+    expect(models[0].result).toMatchSnapshot();
+    expect(models[0].dependencies).toEqual([]);
   });
 
   test('should render `enum` type (union type)', async () => {
     const doc = {
       $id: 'Union',
       type: ['string', 'integer', 'boolean'],
-      enum: ['Texas', 'Alabama', 0, 1, '1', true, {test: 'test'}],
+      enum: ['Texas', 'Alabama', 0, 1, '1', true, { test: 'test' }]
     };
-    const expected = `public enum Union {
-  TEXAS("Texas"), ALABAMA("Alabama"), NUMBER_0(0), NUMBER_1(1), STRING_1("1"), BOOLEAN_TRUE(true), TEST_TEST("{\\"test\\":\\"test\\"}");
 
-  private Object value;
-
-  Union(Object value) {
-    this.value = value;
-  }
-    
-  @JsonValue
-  public Object getValue() {
-    return value;
-  }
-
-  @Override
-  public String toString() {
-    return String.valueOf(value);
-  }
-
-  @JsonCreator
-  public static Union fromValue(Object value) {
-    for (Union e : Union.values()) {
-      if (e.value.equals(value)) {
-        return e;
-      }
-    }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
-  }
-}`;
-
-    const inputModel = await generator.process(doc);
-    const model = inputModel.models['Union'];
-
-    let enumModel = await generator.renderEnum(model, inputModel);
-    const expectedDependencies = ['import com.fasterxml.jackson.annotation.*;'];
-    expect(enumModel.result).toEqual(expected);
-    expect(enumModel.dependencies).toEqual(expectedDependencies);
-
-    enumModel = await generator.render(model, inputModel);
-    expect(enumModel.result).toEqual(expected);
-    expect(enumModel.dependencies).toEqual(expectedDependencies);
+    const models = await generator.generate(doc);
+    expect(models).toHaveLength(1);
+    expect(models[0].result).toMatchSnapshot();
+    expect(models[0].dependencies).toEqual([]);
   });
 
   test('should render custom preset for `enum` type', async () => {
     const doc = {
       $id: 'CustomEnum',
       type: 'string',
-      enum: ['Texas', 'Alabama', 'California'],
+      enum: ['Texas', 'Alabama', 'California']
     };
-    const expected = `@EnumAnnotation
-public enum CustomEnum {
-  TEXAS("Texas"), ALABAMA("Alabama"), CALIFORNIA("California");
 
-  private String value;
-
-  CustomEnum(String value) {
-    this.value = value;
-  }
-    
-  @JsonValue
-  public String getValue() {
-    return value;
-  }
-
-  @Override
-  public String toString() {
-    return String.valueOf(value);
-  }
-
-  @JsonCreator
-  public static CustomEnum fromValue(String value) {
-    for (CustomEnum e : CustomEnum.values()) {
-      if (e.value.equals(value)) {
-        return e;
-      }
-    }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
-  }
-}`;
-
-    generator = new JavaGenerator({ presets: [
-      {
-        enum: {
-          self({ renderer, content }) {
-            const annotation = renderer.renderAnnotation('EnumAnnotation');
-            return `${annotation}\n${content}`;
-          },
+    generator = new JavaGenerator({
+      presets: [
+        {
+          enum: {
+            self({ renderer, content }) {
+              const annotation = renderer.renderAnnotation('EnumAnnotation');
+              return `${annotation}\n${content}`;
+            }
+          }
         }
-      }
-    ] });
+      ]
+    });
 
-    const inputModel = await generator.process(doc);
-    const model = inputModel.models['CustomEnum'];
-    
-    let enumModel = await generator.render(model, inputModel);
-    const expectedDependencies = ['import com.fasterxml.jackson.annotation.*;'];
-    expect(enumModel.result).toEqual(expected);
-    expect(enumModel.dependencies).toEqual(expectedDependencies);
-    
-    enumModel = await generator.renderEnum(model, inputModel);
-    expect(enumModel.result).toEqual(expected);
-    expect(enumModel.dependencies).toEqual(expectedDependencies);
+    const models = await generator.generate(doc);
+    expect(models).toHaveLength(1);
+    expect(models[0].result).toMatchSnapshot();
+    expect(models[0].dependencies).toEqual([]);
+  });
+
+  test('should render enums with translated special characters', async () => {
+    const doc = {
+      $id: 'States',
+      enum: ['test+', 'test', 'test-', 'test?!', '*test']
+    };
+
+    const models = await generator.generate(doc);
+    expect(models).toHaveLength(1);
+    expect(models[0].result).toMatchSnapshot();
+    expect(models[0].dependencies).toEqual([]);
   });
 
   test('should render List type for collections', async () => {
@@ -384,25 +193,17 @@ public enum CustomEnum {
       type: 'object',
       additionalProperties: false,
       properties: {
-        arrayType: { type: 'array' },
+        arrayType: { type: 'array' }
       }
     };
-    const expected = `public class CustomClass {
-  private List<Object> arrayType;
-
-  public List<Object> getArrayType() { return this.arrayType; }
-  public void setArrayType(List<Object> arrayType) { this.arrayType = arrayType; }
-}`;
     const expectedDependencies = ['import java.util.List;'];
 
     generator = new JavaGenerator({ collectionType: 'List' });
 
-    const inputModel = await generator.process(doc);
-    const model = inputModel.models['CustomClass'];
-
-    const classModel = await generator.render(model, inputModel);
-    expect(classModel.result).toEqual(expected);
-    expect(classModel.dependencies).toEqual(expectedDependencies);
+    const models = await generator.generate(doc);
+    expect(models).toHaveLength(1);
+    expect(models[0].result).toMatchSnapshot();
+    expect(models[0].dependencies).toEqual(expectedDependencies);
   });
 
   test('should render models and their dependencies', async () => {
@@ -414,25 +215,36 @@ public enum CustomEnum {
         city: { type: 'string', description: 'City description' },
         state: { type: 'string' },
         house_number: { type: 'number' },
-        marriage: { type: 'boolean', description: 'Status if marriage live in given house' },
-        members: { oneOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }], },
-        array_type: { type: 'array', items: [{ type: 'string' }, { type: 'number' }] },
-        other_model: { type: 'object', $id: 'OtherModel', properties: {street_name: { type: 'string' }} },
+        marriage: {
+          type: 'boolean',
+          description: 'Status if marriage live in given house'
+        },
+        members: {
+          oneOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }]
+        },
+        array_type: {
+          type: 'array',
+          items: [{ type: 'string' }, { type: 'number' }]
+        },
+        other_model: {
+          type: 'object',
+          $id: 'OtherModel',
+          properties: { street_name: { type: 'string' } }
+        }
       },
       patternProperties: {
         '^S(.?*)test&': {
           type: 'string'
         }
       },
-      required: ['street_name', 'city', 'state', 'house_number', 'array_type'],
+      required: ['street_name', 'city', 'state', 'house_number', 'array_type']
     };
-    const config = {packageName: 'test.package'};
+    const config = { packageName: 'test.packageName' };
     const models = await generator.generateCompleteModels(doc, config);
-    expect(models).toHaveLength(2);
-    expect(models[0].result).toMatchSnapshot();
-    expect(models[1].result).toMatchSnapshot();
+    expect(models).toHaveLength(5);
+    expect(models.map((model) => model.result)).toMatchSnapshot();
   });
-  test('should throw error when reserved keyword is used for package name', async () => {
+  test('should throw error when reserved keyword is used in any part of the package name', async () => {
     const doc = {
       $id: 'Address',
       type: 'object',
@@ -441,19 +253,670 @@ public enum CustomEnum {
         city: { type: 'string', description: 'City description' },
         state: { type: 'string' },
         house_number: { type: 'number' },
-        marriage: { type: 'boolean', description: 'Status if marriage live in given house' },
-        members: { oneOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }], },
-        array_type: { type: 'array', items: [{ type: 'string' }, { type: 'number' }] },
+        marriage: {
+          type: 'boolean',
+          description: 'Status if marriage live in given house'
+        },
+        members: {
+          oneOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }]
+        },
+        array_type: {
+          type: 'array',
+          items: [{ type: 'string' }, { type: 'number' }]
+        }
       },
       patternProperties: {
         '^S(.?*)test&': {
           type: 'string'
         }
       },
-      required: ['street_name', 'city', 'state', 'house_number', 'array_type'],
+      required: ['street_name', 'city', 'state', 'house_number', 'array_type']
     };
-    const config = {packageName: 'package'};
-    const expectedError = new Error('You cannot use reserved Java keyword (package) as package name, please use another.');
-    await expect(generator.generateCompleteModels(doc, config)).rejects.toEqual(expectedError);
+    const config = { packageName: 'valid.package.correct.class' };
+    const expectedError = new Error(
+      `You cannot use 'valid.package.correct.class' as a package name, contains reserved keywords: [package, class]`
+    );
+    await expect(generator.generateCompleteModels(doc, config)).rejects.toEqual(
+      expectedError
+    );
+  });
+
+  describe('allowInheritance', () => {
+    test('should create interface for Animal, Pet and Dog', async () => {
+      const asyncapiDoc = {
+        asyncapi: '2.5.0',
+        info: {
+          title: 'CloudEvent example',
+          version: '1.0.0'
+        },
+        channels: {
+          animal: {
+            publish: {
+              message: {
+                oneOf: [
+                  {
+                    $ref: '#/components/messages/Boxer'
+                  },
+                  {
+                    $ref: '#/components/messages/Cat'
+                  }
+                ]
+              }
+            }
+          }
+        },
+        components: {
+          messages: {
+            Boxer: {
+              payload: {
+                $ref: '#/components/schemas/Boxer'
+              }
+            },
+            Cat: {
+              payload: {
+                $ref: '#/components/schemas/Cat'
+              }
+            }
+          },
+          schemas: {
+            Pet: {
+              title: 'Pet',
+              type: 'object',
+              discriminator: 'petType',
+              properties: {
+                petType: {
+                  type: 'string'
+                }
+              },
+              required: ['type']
+            },
+            Cat: {
+              title: 'Cat',
+              allOf: [
+                {
+                  $ref: '#/components/schemas/Pet'
+                }
+              ]
+            },
+            Dog: {
+              title: 'Dog',
+              allOf: [
+                {
+                  $ref: '#/components/schemas/Pet'
+                }
+              ]
+            },
+            Boxer: {
+              title: 'Boxer',
+              type: 'object',
+              allOf: [
+                {
+                  $ref: '#/components/schemas/Dog'
+                }
+              ],
+              properties: {
+                breed: {
+                  const: 'Boxer'
+                }
+              }
+            }
+          }
+        }
+      };
+
+      generator = new JavaGenerator({
+        presets: [
+          JAVA_COMMON_PRESET,
+          JAVA_JACKSON_PRESET,
+          JAVA_DESCRIPTION_PRESET,
+          JAVA_CONSTRAINTS_PRESET
+        ],
+        collectionType: 'List',
+        processorOptions: {
+          interpreter: {
+            allowInheritance: true
+          }
+        }
+      });
+
+      const models = await generator.generate(asyncapiDoc);
+      expect(models.map((model) => model.result)).toMatchSnapshot();
+    });
+  });
+
+  describe('oneOf/discriminator', () => {
+    test('should create an interface', async () => {
+      const asyncapiDoc = {
+        asyncapi: '2.6.0',
+        info: {
+          title: 'Vehicle example',
+          version: '1.0.0'
+        },
+        channels: {},
+        components: {
+          messages: {
+            Vehicle: {
+              payload: {
+                title: 'Vehicle',
+                type: 'object',
+                discriminator: 'vehicleType',
+                properties: {
+                  vehicleType: {
+                    title: 'VehicleType',
+                    type: 'string'
+                  }
+                },
+                required: ['vehicleType'],
+                oneOf: [
+                  {
+                    $ref: '#/components/schemas/Car'
+                  },
+                  {
+                    $ref: '#/components/schemas/Truck'
+                  }
+                ]
+              }
+            }
+          },
+          schemas: {
+            Car: {
+              type: 'object',
+              properties: {
+                vehicleType: {
+                  const: 'Car'
+                }
+              }
+            },
+
+            Truck: {
+              type: 'object',
+              properties: {
+                vehicleType: {
+                  const: 'Truck'
+                }
+              }
+            }
+          }
+        }
+      };
+
+      const models = await generator.generate(asyncapiDoc);
+      expect(models.map((model) => model.result)).toMatchSnapshot();
+    });
+
+    describe('with jackson preset', () => {
+      beforeEach(() => {
+        generator = new JavaGenerator({
+          presets: [
+            JAVA_COMMON_PRESET,
+            JAVA_JACKSON_PRESET,
+            JAVA_DESCRIPTION_PRESET,
+            JAVA_CONSTRAINTS_PRESET
+          ],
+          collectionType: 'List'
+        });
+      });
+
+      test('handle allOf with const in CloudEvent type', async () => {
+        const asyncapiDoc = {
+          asyncapi: '2.5.0',
+          info: {
+            title: 'CloudEvent example',
+            version: '1.0.0'
+          },
+          channels: {
+            pet: {
+              publish: {
+                message: {
+                  oneOf: [
+                    {
+                      $ref: '#/components/messages/Dog'
+                    },
+                    {
+                      $ref: '#/components/messages/Cat'
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          components: {
+            messages: {
+              Dog: {
+                payload: {
+                  title: 'Dog',
+                  allOf: [
+                    {
+                      $ref: '#/components/schemas/CloudEvent'
+                    },
+                    {
+                      $ref: '#/components/schemas/Dog'
+                    }
+                  ]
+                }
+              },
+              Cat: {
+                payload: {
+                  title: 'Cat',
+                  allOf: [
+                    {
+                      $ref: '#/components/schemas/CloudEvent'
+                    },
+                    {
+                      $ref: '#/components/schemas/Cat'
+                    }
+                  ]
+                }
+              }
+            },
+            schemas: {
+              CloudEvent: {
+                title: 'CloudEvent',
+                type: 'object',
+                discriminator: 'type',
+                properties: {
+                  id: {
+                    type: 'string'
+                  },
+                  source: {
+                    type: 'string',
+                    format: 'uri-reference'
+                  },
+                  specversion: {
+                    type: 'string',
+                    const: '1.0'
+                  },
+                  type: {
+                    title: 'CloudEventType',
+                    type: 'string'
+                  },
+                  dataschema: {
+                    type: 'string',
+                    format: 'uri'
+                  },
+                  time: {
+                    type: 'string',
+                    format: 'date-time'
+                  }
+                },
+                required: ['id', 'source', 'specversion', 'type']
+              },
+              Dog: {
+                type: 'object',
+                properties: {
+                  type: {
+                    const: 'Dog'
+                  }
+                }
+              },
+              Cat: {
+                type: 'object',
+                properties: {
+                  type: {
+                    const: 'Cat'
+                  }
+                }
+              }
+            }
+          }
+        };
+
+        const models = await generator.generate(asyncapiDoc);
+        expect(models.map((model) => model.result)).toMatchSnapshot();
+
+        const dog = models.find((model) => model.modelName === 'Dog');
+        expect(dog).not.toBeUndefined();
+        expect(dog?.result).toContain(
+          'private final CloudEventType type = CloudEventType.DOG;'
+        );
+
+        const cat = models.find((model) => model.modelName === 'Cat');
+        expect(cat).not.toBeUndefined();
+        expect(cat?.result).toContain(
+          'private final CloudEventType type = CloudEventType.CAT;'
+        );
+
+        const cloudEventType = models.find(
+          (model) => model.modelName === 'CloudEventType'
+        );
+        expect(cloudEventType).not.toBeUndefined();
+        expect(cloudEventType?.result).toContain('DOG');
+        expect(cloudEventType?.result).toContain('CAT');
+      });
+
+      test('handle setting title with const', async () => {
+        const asyncapiDoc = {
+          asyncapi: '2.5.0',
+          info: {
+            title: 'CloudEvent example',
+            version: '1.0.0'
+          },
+          channels: {
+            pet: {
+              publish: {
+                message: {
+                  oneOf: [
+                    {
+                      $ref: '#/components/messages/Dog'
+                    },
+                    {
+                      $ref: '#/components/messages/Cat'
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          components: {
+            messages: {
+              Dog: {
+                payload: {
+                  title: 'Dog',
+                  allOf: [
+                    {
+                      $ref: '#/components/schemas/CloudEvent'
+                    },
+                    {
+                      $ref: '#/components/schemas/Dog'
+                    }
+                  ]
+                }
+              },
+              Cat: {
+                payload: {
+                  title: 'Cat',
+                  allOf: [
+                    {
+                      $ref: '#/components/schemas/CloudEvent'
+                    },
+                    {
+                      $ref: '#/components/schemas/Cat'
+                    }
+                  ]
+                }
+              }
+            },
+            schemas: {
+              CloudEvent: {
+                title: 'CloudEvent',
+                type: 'object',
+                discriminator: 'type',
+                properties: {
+                  type: {
+                    type: 'string'
+                  }
+                },
+                required: ['type']
+              },
+              Dog: {
+                type: 'object',
+                properties: {
+                  type: {
+                    title: 'DogType',
+                    const: 'Dog'
+                  }
+                }
+              },
+              Cat: {
+                type: 'object',
+                properties: {
+                  type: {
+                    title: 'CatType',
+                    const: 'Cat'
+                  }
+                }
+              }
+            }
+          }
+        };
+
+        const models = await generator.generate(asyncapiDoc);
+        expect(models.map((model) => model.result)).toMatchSnapshot();
+
+        const dog = models.find((model) => model.modelName === 'Dog');
+        expect(dog).not.toBeUndefined();
+        expect(dog?.result).toContain(
+          'private final DogType type = DogType.DOG;'
+        );
+
+        const cat = models.find((model) => model.modelName === 'Cat');
+        expect(cat).not.toBeUndefined();
+        expect(cat?.result).toContain(
+          'private final CatType type = CatType.CAT;'
+        );
+
+        const dogType = models.find((model) => model.modelName === 'DogType');
+        expect(dogType).not.toBeUndefined();
+        expect(dogType?.result).toContain('DOG');
+
+        const catType = models.find((model) => model.modelName === 'CatType');
+        expect(catType).not.toBeUndefined();
+        expect(catType?.result).toContain('CAT');
+      });
+
+      test('handle one const with discriminator', async () => {
+        const asyncapiDoc = {
+          asyncapi: '2.6.0',
+          info: {
+            title: 'CloudEvent2 example',
+            version: '1.0.0'
+          },
+          channels: {
+            pet: {
+              publish: {
+                message: {
+                  $ref: '#/components/messages/Dog'
+                }
+              }
+            }
+          },
+          components: {
+            messages: {
+              Dog: {
+                payload: {
+                  title: 'Dog',
+                  allOf: [
+                    {
+                      $ref: '#/components/schemas/CloudEvent'
+                    },
+                    {
+                      $ref: '#/components/schemas/Dog'
+                    }
+                  ]
+                }
+              }
+            },
+            schemas: {
+              CloudEvent: {
+                title: 'CloudEvent',
+                type: 'object',
+                discriminator: 'type',
+                properties: {
+                  id: {
+                    type: 'string'
+                  },
+                  type: {
+                    title: 'CloudEventType',
+                    type: 'string'
+                  }
+                },
+                required: ['id', 'type']
+              },
+              Dog: {
+                type: 'object',
+                properties: {
+                  type: {
+                    const: 'Dog'
+                  }
+                }
+              }
+            }
+          }
+        };
+
+        const models = await generator.generate(asyncapiDoc);
+        expect(models.map((model) => model.result)).toMatchSnapshot();
+
+        const dog = models.find((model) => model.modelName === 'Dog');
+        expect(dog).not.toBeUndefined();
+        expect(dog?.result).toContain(
+          'private final CloudEventType type = CloudEventType.DOG;'
+        );
+
+        const cloudEventType = models.find(
+          (model) => model.modelName === 'CloudEventType'
+        );
+        expect(cloudEventType).not.toBeUndefined();
+        expect(cloudEventType?.result).toContain('DOG');
+      });
+      test('should create an interface for child models', async () => {
+        const asyncapiDoc = {
+          asyncapi: '2.6.0',
+          info: {
+            title: 'Vehicle example',
+            version: '1.0.0'
+          },
+          channels: {},
+          components: {
+            messages: {
+              Vehicle: {
+                payload: {
+                  title: 'Cargo',
+                  type: 'object',
+                  properties: {
+                    vehicle: {
+                      $ref: '#/components/schemas/Vehicle'
+                    }
+                  }
+                }
+              }
+            },
+            schemas: {
+              Vehicle: {
+                title: 'Vehicle',
+                type: 'object',
+                discriminator: 'vehicleType',
+                properties: {
+                  vehicleType: {
+                    title: 'VehicleType',
+                    type: 'string'
+                  }
+                },
+                required: ['vehicleType'],
+                oneOf: [
+                  {
+                    $ref: '#/components/schemas/Car'
+                  },
+                  {
+                    $ref: '#/components/schemas/Truck'
+                  }
+                ]
+              },
+              Car: {
+                type: 'object',
+                properties: {
+                  vehicleType: {
+                    const: 'Car'
+                  }
+                }
+              },
+
+              Truck: {
+                type: 'object',
+                properties: {
+                  vehicleType: {
+                    const: 'Truck'
+                  }
+                }
+              }
+            }
+          }
+        };
+
+        const models = await generator.generate(asyncapiDoc);
+        expect(models.map((model) => model.result)).toMatchSnapshot();
+      });
+
+      test('date-time format should render java.time.OffsetDateTime', async () => {
+        const asyncapiDoc = {
+          asyncapi: '2.6.0',
+          info: {
+            title: 'Event API',
+            version: 'v1'
+          },
+          channels: {
+            events: {
+              subscribe: {
+                message: {
+                  $ref: '#/components/messages/Event'
+                }
+              }
+            }
+          },
+          components: {
+            messages: {
+              Event: {
+                title: 'Event',
+                payload: {
+                  title: 'Event',
+                  type: 'object',
+                  properties: {
+                    action: {
+                      title: 'Action',
+                      type: 'string',
+                      enum: ['ADD', 'UPDATE', 'DELETE']
+                    }
+                  },
+                  required: ['action'],
+                  allOf: [
+                    {
+                      if: {
+                        properties: {
+                          action: {
+                            const: 'ADD'
+                          }
+                        },
+                        required: ['action']
+                      },
+                      then: {
+                        $ref: '#/components/schemas/Event.AddOrUpdate'
+                      }
+                    },
+                    {
+                      if: {
+                        properties: {
+                          action: {
+                            const: 'UPDATE'
+                          }
+                        },
+                        required: ['action']
+                      },
+                      then: {
+                        $ref: '#/components/schemas/Event.AddOrUpdate'
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            schemas: {
+              'Event.AddOrUpdate': {
+                type: 'object',
+                properties: {
+                  event_time: {
+                    type: 'string',
+                    format: 'date-time'
+                  }
+                },
+                required: ['event_time']
+              }
+            }
+          }
+        };
+
+        const models = await generator.generate(asyncapiDoc);
+        expect(models.map((model) => model.result)).toMatchSnapshot();
+      });
+    });
   });
 });

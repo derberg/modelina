@@ -4,3 +4,5 @@ export * from './AsyncAPIInputProcessor';
 export * from './JsonSchemaInputProcessor';
 export * from './SwaggerInputProcessor';
 export * from './OpenAPIInputProcessor';
+export * from './TypeScriptInputProcessor';
+export * from './AvroSchemaInputProcessor';
